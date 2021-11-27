@@ -37,7 +37,7 @@ y = y ./ sum(y);
 ym = ym ./ sum(ym);
 figure;
 p1 = plot(x, y, 's-r', xm, ym, '-ob');
-set(gca, 'Fontsize', 11);
+set(gca, 'Fontsize', 14);
 legend('Natural image', 'Fused image');
 ax = gca;
 ax.XGrid = 'on';
@@ -48,6 +48,7 @@ ax.YLabel.String = 'Probability';
 ax.YLabel.Color = [0.3 0.3 0.3];
 ax.XLabel.String = 'Normalized luminance';
 ax.XLabel.Color = [0.3 0.3 0.3];
+saveas(gcf, 'mscn.jpg');
 %=========================================================================%
 
 % curvelet
@@ -65,7 +66,7 @@ ax.XLabel.Color = [0.3 0.3 0.3];
 [c1, v1] = curvelet_extract(img, 40);
 figure;
 p2 = plot(v1, c1, 's-r', v, c, '-ob');
-set(gca, 'Fontsize', 11);
+set(gca, 'Fontsize', 14);
 legend('Natural image', 'Fused image', 'Location','northwest');
 ax = gca;
 ax.XGrid = 'on';
@@ -76,3 +77,4 @@ ax.YLabel.String = 'Probability';
 ax.YLabel.Color = [0.3 0.3 0.3];
 ax.XLabel.String = 'Logarithm (base 10) of magnitude of curvelet coefficients';
 ax.XLabel.Color = [0.3 0.3 0.3];
+saveas(gcf, 'cur.jpg');
