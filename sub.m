@@ -37,6 +37,7 @@ fclose(fid);
 prefix_path = 'E:\hgc\pic\';
 prefix_path_ref = 'E:\hgc\ref\';
 count = 1;
+tic
 for idx = 1 : length(pics)
     now_path = [prefix_path pics{idx}];
     imgR = imread(now_path); % 融合图像
@@ -53,13 +54,13 @@ for idx = 1 : length(pics)
     
         % 融合后的图像由RGB变为NTSC
         imgN = zeros(size(img));
-        imgN(:,:,1) = 0.299 * double(img(:,:,1)) + 0.587 * double(img(:,:,2)) + 0.114 * double(img(:,:,3));
+%         imgN(:,:,1) = 0.299 * double(img(:,:,1)) + 0.587 * double(img(:,:,2)) + 0.114 * double(img(:,:,3));
         imgN(:,:,2) = 0.596 * double(img(:,:,1)) - 0.274 * double(img(:,:,2)) - 0.322 * double(img(:,:,3));
         imgN(:,:,3) = 0.211 * double(img(:,:,1)) - 0.523 * double(img(:,:,2)) + 0.312 * double(img(:,:,3));
     
         %  伪彩色参考图像由RGB变为NTSC
         ref2N = zeros(size(ref2));
-        ref2N(:,:,1) = 0.299 * double(ref2(:,:,1)) + 0.587 * double(ref2(:,:,2)) + 0.114 * double(ref2(:,:,3));
+%         ref2N(:,:,1) = 0.299 * double(ref2(:,:,1)) + 0.587 * double(ref2(:,:,2)) + 0.114 * double(ref2(:,:,3));
         ref2N(:,:,2) = 0.596 * double(ref2(:,:,1)) - 0.274 * double(ref2(:,:,2)) - 0.322 * double(ref2(:,:,3));
         ref2N(:,:,3) = 0.211 * double(ref2(:,:,1)) - 0.523 * double(ref2(:,:,2)) + 0.312 * double(ref2(:,:,3));
     %
@@ -103,7 +104,7 @@ for idx = 1 : length(pics)
     
     %=====================================================================%
         % 色彩相似度（直接利用NTSC模型）
-        % 当伪彩色在融合图像中占比较少时，色彩相似度会显著增加，因为融合图像大部分为灰度图像和伪彩色参考图像色彩相似度大
+        % 当伪彩色在融合图像中占比较少时，色彩相似度会显著增加，因为融合图像大calc部分为灰度图像和伪彩色参考图像色彩相似度大
         sub2Q = abs(double(imgN(:,:,2)));
         sub2I = abs(double(imgN(:,:,3)));
         ref2Q = abs(double(ref2N(:,:,2)));
@@ -111,8 +112,31 @@ for idx = 1 : length(pics)
     
         sp_n = (2 * (sub2Q .* ref2Q + sub2I .* ref2I) + 0.01 )...
             ./ (sub2Q .* sub2Q + ref2Q .* ref2Q + sub2I .* sub2I + ref2I .* ref2I + 0.01);
-    
-        sCo_n = mean2(sp_n); %　KROCC 0.7702; PLCC 0.9633; SROCC 0.9180
+        % 方法一
+%         sCo_n = mean2(sp_n); %　KROCC 0.4906 PLCC 0.6738 RMSE 21.9993 SROCC 0.6643
+        % 方法二
+%         len = sum(sum(sp_n < 1));
+%         index = find(sp_n < 1);
+%         all = sum(sum(sp_n(index)));
+%         sCo_n = all / len;
+        % 方法三
+%         sp_n = sp_n .^ 2;
+%         sCo_n = areaMean(sp_n); 
+
+        % 方法三增加边长
+        sCo_n = localMeanF(sp_n, 12); 
+        % i = 1: KROCC 0.4617 PLCC 0.7522 RMSE 19.7564 SROCC 0.6368
+        % i = 2: KROCC 0.4646 PLCC 0.7565 RMSE 18.7989 SROCC 0.6396
+        % i = 3: KROCC 0.4682 PLCC 0.7590 RMSE 18.0843 SROCC 0.6439
+        % i = 4: KROCC 0.4717 PLCC 0.7606 RMSE 17.5503 SROCC 0.6475
+        % i = 5: KROCC 0.4739 PLCC 0.7617 RMSE 17.1358 SROCC 0.6502
+        % i = 6: KROCC 0.4769 PLCC 0.7627 RMSE 16.8112 SROCC 0.6539
+        % i = 7: KROCC 0.4795 PLCC 0.7634 RMSE 16.5642 SROCC 0.6570
+        % i = 8: KROCC 0.4812 PLCC 0.7638 RMSE 16.3883 SROCC 0.6592
+        % i = 9: KROCC 0.4841 PLCC 0.7641 RMSE 16.2709 SROCC 0.6624
+        % i = 10:KROCC 0.4864 PLCC 0.7642 RMSE 16.2029 SROCC 0.6652
+        % i = 11:KROCC 0.4882 PLCC 0.7642 RMSE 16.1785 SROCC 0.6671
+        % i = 12:KROCC 0.4908 PLCC 0.7640 RMSE 16.1922 SROCC 0.6696
     %=====================================================================%
         % 举例说明IS和CS的互补性（绘图）
 %         figure;
@@ -148,17 +172,17 @@ for idx = 1 : length(pics)
     %====================================================================%
     
 %     信息相似度（NTSC颜色分量）
-        ref2N2 = ref2N(:,:,2);
+        ref2N2 = ref2N(:,:,2); % Q
         imgN2 = imgN(:,:,2);
-        ref2N2(ref2N2 < 28 & ref2N2 > -20) = 10; % 实验出来阈值（naturePic），可设置为任意相同值
-        imgN2(imgN2 < 28 & imgN2 > -20) = 10;
-        [ref2IE, sub2IE, mutualInformation] = entropyAndMutualInformation(ref2N2,imgN2);
+        ref2N2(ref2N2 < 28 & ref2N2 > -20) = 0; % 实验出来阈值（naturePic），可设置为任意相同值
+        imgN2(imgN2 < 28 & imgN2 > -20) = 0;
+        [ref2IE, sub2IE] = imageEntropy(ref2N2,imgN2);
     
         ref2N3 = ref2N(:,:,3);
         imgN3 = imgN(:,:,3);
-        ref2N3(ref2N3 < 16 & ref2N3 > -15) = 10;
-        imgN3(imgN3 < 16 & imgN3 > -15) = 10;
-        [ref2QE, sub2QE, mutualInformation2] = entropyAndMutualInformation(ref2N3,imgN3);
+        ref2N3(ref2N3 < 16 & ref2N3 > -15) = 0;
+        imgN3(imgN3 < 16 & imgN3 > -15) = 0;
+        [ref2QE, sub2QE] = imageEntropy(ref2N3,imgN3);
     
         sa = (2 * ref2IE * sub2IE + 0.03) / (ref2IE * ref2IE + sub2IE * sub2IE + 0.03);
         sb = (2 * ref2QE * sub2QE + 0.03) / (ref2QE * ref2QE + sub2QE * sub2QE + 0.03);
@@ -182,8 +206,8 @@ for idx = 1 : length(pics)
     
     %=====================================================================%
     
-    temp = sCo_n * sEn_n;
-    score_ci(idx) = temp;
+%     temp = sCo_n * sEn_n;
+%     score_ci(idx) = temp;
     score_c(idx) = sCo_n;
     score_i(idx) = sEn_n;
     
@@ -210,31 +234,32 @@ for idx = 1 : length(pics)
     
     
 end
+toc
 
 %%
 % 导出真实分数，IS分数，CS分数
-save('s.txt', 'scoreT','-ascii');
-save('CS.txt', 'score_c','-ascii');
-save('IS.txt', 'score_i','-ascii');
+% save('s.txt', 'scoreT','-ascii');
+% save('CS.txt', 'score_c','-ascii');
+% save('IS.txt', 'score_i','-ascii');
 %%
 
-% 计算相关系数（CS and IS）
-SROCC_CI = corr(score_ci, scoreT, 'type', 'Spearman');
-KROCC_CI = corr(score_ci, scoreT,'type','Kendall');
-PLCC_CI = corr(score_ci, scoreT,'type','Pearson');
-RMSE_CI = sqrt(mean2((score_ci * 100 - scoreT).^2));
+% 计算相关系数（CS and IS）(过时)
+% SROCC_CI = corr(score_ci, scoreT, 'type', 'Spearman');
+% KROCC_CI = corr(score_ci, scoreT,'type','Kendall');
+% PLCC_CI = corr(score_ci, scoreT,'type','Pearson');
+% RMSE_CI = sqrt(mean2((score_ci * 100 - scoreT).^2));
 
 % 计算相关系数（CS）
 SROCC_C = corr(score_c, scoreT, 'type', 'Spearman');
 KROCC_C = corr(score_c, scoreT,'type','Kendall');
 PLCC_C = corr(score_c, scoreT,'type','Pearson');
-RMSE_C = sqrt(mean2((score_c * 100 - scoreT).^2));
+RMSE_C = sqrt(mean2((score_c - scoreT).^2));
 
 % 计算相关系数（IS）
 SROCC_I = corr(score_i, scoreT, 'type', 'Spearman');
 KROCC_I = corr(score_i, scoreT,'type','Kendall');
 PLCC_I = corr(score_i, scoreT,'type','Pearson');
-RMSE_I = sqrt(mean2((score_i * 100 - scoreT).^2));
+RMSE_I = sqrt(mean2((score_i - scoreT).^2));
 
 
 clearvars -except SROCC_CI KROCC_CI PLCC_CI RMSE_CI SROCC_C KROCC_C ...
