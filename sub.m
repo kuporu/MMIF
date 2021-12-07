@@ -186,7 +186,7 @@ for idx = 1 : length(pics)
     
         sa = (2 * ref2IE * sub2IE + 0.03) / (ref2IE * ref2IE + sub2IE * sub2IE + 0.03);
         sb = (2 * ref2QE * sub2QE + 0.03) / (ref2QE * ref2QE + sub2QE * sub2QE + 0.03);
-        sEn_n = sa .* sb;
+        sEn_n = (sa + sb) / 2;
     
     %=====================================================================%
     
@@ -238,9 +238,9 @@ toc
 
 %%
 % 导出真实分数，IS分数，CS分数
-% save('s.txt', 'scoreT','-ascii');
-% save('CS.txt', 'score_c','-ascii');
-% save('IS.txt', 'score_i','-ascii');
+save('s.txt', 'scoreT','-ascii');
+save('CS.txt', 'score_c','-ascii');
+save('IS.txt', 'score_i','-ascii');
 %%
 
 % 计算相关系数（CS and IS）(过时)
@@ -262,5 +262,4 @@ PLCC_I = corr(score_i, scoreT,'type','Pearson');
 RMSE_I = sqrt(mean2((score_i - scoreT).^2));
 
 
-clearvars -except SROCC_CI KROCC_CI PLCC_CI RMSE_CI SROCC_C KROCC_C ...
-    PLCC_C RMSE_C SROCC_I KROCC_I PLCC_I RMSE_I scoreT score_c score_i
+clearvars -except SROCC_C KROCC_C PLCC_C RMSE_C SROCC_I KROCC_I PLCC_I RMSE_I
