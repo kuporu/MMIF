@@ -10,7 +10,7 @@ s = fscanf(fids, '%f');
 cs = fscanf(fidCS, '%f');
 is = fscanf(fidIS, '%f');
 
-mn = (1 - 0.3) * ((100 * cs) .^ 1.023) + 0.3 * ((100 * is) .^ 0.96);
+mn = (1 - 0.47) * ((100 * cs) .^ 1.02) + 0.47 * ((100 * is) .^ 0.96);
 
 SROCC_CI = corr(s, mn, 'type', 'Spearman');
 KROCC_CI = corr(s, mn,'type','Kendall');
